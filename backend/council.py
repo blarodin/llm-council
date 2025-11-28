@@ -1,8 +1,52 @@
 """3-stage LLM Council orchestration."""
 
+import base64
 from typing import List, Dict, Any, Tuple
 from .openrouter import query_models_parallel, query_model
 from .config import COUNCIL_MODELS, CHAIRMAN_MODEL
+
+
+def extract_text_from_files(files: List[Dict[str, Any]]) -> str:
+    """
+    Extract text content from text-based files.
+    
+    Args:
+        files: List of file attachments with 'name', 'type', and 'data' (base64 data URL)
+    
+    Returns:
+        Formatted string with file contents, or empty string if no text files
+    """
+    if not files:
+        return ""
+    
+    # File types that should be skipped (binary formats)
+    binary_types = {'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
+    
+    text_parts = []
+    for file in files:
+        # Skip images and known binary formats
+        if file['type'].startswith('image/') or file['type'] in binary_types:
+            continue
+            
+        try:
+            # Extract base64 data from data URL (format: data:mime/type;base64,<data>)
+            data_url = file['data']
+            if 'base64,' in data_url:
+                base64_data = data_url.split('base64,', 1)[1]
+                # Decode base64 to text
+                text_content = base64.b64decode(base64_data).decode('utf-8')
+                text_parts.append(f"--- File: {file['name']} ---\n{text_content}\n--- End of {file['name']} ---")
+        except UnicodeDecodeError:
+            # Binary file that we can't decode as text - skip silently
+            continue
+        except Exception as e:
+            # Other errors - log but continue
+            print(f"Warning: Could not extract text from {file['name']}: {e}")
+            continue
+    
+    if text_parts:
+        return "\n\n" + "\n\n".join(text_parts)
+    return ""
 
 
 async def stage1_collect_responses(user_query: str, files: List[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
@@ -17,9 +61,18 @@ async def stage1_collect_responses(user_query: str, files: List[Dict[str, Any]] 
         List of dicts with 'model' and 'response' keys
     """
     # Build message content with files if present
-    if files and any(f['type'].startswith('image/') for f in files):
+    text_content = user_query
+    has_images = files and any(f['type'].startswith('image/') for f in files)
+    
+    # Add text file contents to query
+    if files:
+        file_text = extract_text_from_files(files)
+        if file_text:
+            text_content += file_text
+    
+    if has_images:
         # Vision models can handle images
-        content = [{"type": "text", "text": user_query}]
+        content = [{"type": "text", "text": text_content}]
         for file in files:
             if file['type'].startswith('image/'):
                 content.append({
@@ -29,7 +82,7 @@ async def stage1_collect_responses(user_query: str, files: List[Dict[str, Any]] 
         messages = [{"role": "user", "content": content}]
     else:
         # Text-only message
-        messages = [{"role": "user", "content": user_query}]
+        messages = [{"role": "user", "content": text_content}]
 
     # Query all models in parallel
     responses = await query_models_parallel(COUNCIL_MODELS, messages)
@@ -77,9 +130,16 @@ async def stage2_collect_rankings(
         for label, result in zip(labels, stage1_results)
     ])
 
+    # Build query text with file contents if present
+    query_text = user_query
+    if files:
+        file_text = extract_text_from_files(files)
+        if file_text:
+            query_text += file_text
+    
     ranking_prompt = f"""You are evaluating different responses to the following question:
 
-Question: {user_query}
+Question: {query_text}
 
 Here are the responses from different models (anonymized):
 
@@ -157,9 +217,16 @@ async def stage3_synthesize_final(
         for result in stage2_results
     ])
 
+    # Build query text with file contents if present
+    query_text = user_query
+    if files:
+        file_text = extract_text_from_files(files)
+        if file_text:
+            query_text += file_text
+    
     chairman_prompt = f"""You are the Chairman of an LLM Council. Multiple AI models have provided responses to a user's question, and then ranked each other's responses.
 
-Original Question: {user_query}
+Original Question: {query_text}
 
 STAGE 1 - Individual Responses:
 {stage1_text}
@@ -311,18 +378,19 @@ Title:"""
     return title
 
 
-async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
+async def run_full_council(user_query: str, files: List[Dict[str, Any]] = None) -> Tuple[List, List, Dict, Dict]:
     """
     Run the complete 3-stage council process.
 
     Args:
         user_query: The user's question
+        files: Optional list of file attachments
 
     Returns:
         Tuple of (stage1_results, stage2_results, stage3_result, metadata)
     """
     # Stage 1: Collect individual responses
-    stage1_results = await stage1_collect_responses(user_query)
+    stage1_results = await stage1_collect_responses(user_query, files)
 
     # If no models responded successfully, return error
     if not stage1_results:
@@ -332,7 +400,7 @@ async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
         }, {}
 
     # Stage 2: Collect rankings
-    stage2_results, label_to_model = await stage2_collect_rankings(user_query, stage1_results)
+    stage2_results, label_to_model = await stage2_collect_rankings(user_query, stage1_results, files)
 
     # Calculate aggregate rankings
     aggregate_rankings = calculate_aggregate_rankings(stage2_results, label_to_model)
@@ -341,7 +409,8 @@ async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
     stage3_result = await stage3_synthesize_final(
         user_query,
         stage1_results,
-        stage2_results
+        stage2_results,
+        files
     )
 
     # Prepare metadata

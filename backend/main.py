@@ -98,6 +98,21 @@ async def delete_conversation(conversation_id: str):
         raise HTTPException(status_code=404, detail=str(e))
 
 
+class UpdateTitleRequest(BaseModel):
+    """Request to update conversation title."""
+    title: str
+
+
+@app.patch("/api/conversations/{conversation_id}/title")
+async def update_conversation_title(conversation_id: str, request: UpdateTitleRequest):
+    """Update the title of a conversation."""
+    try:
+        storage.update_conversation_title(conversation_id, request.title)
+        return {"status": "ok", "message": "Title updated"}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @app.post("/api/conversations/{conversation_id}/message")
 async def send_message(conversation_id: str, request: SendMessageRequest):
     """
@@ -112,8 +127,9 @@ async def send_message(conversation_id: str, request: SendMessageRequest):
     # Check if this is the first message
     is_first_message = len(conversation["messages"]) == 0
 
-    # Add user message
-    storage.add_user_message(conversation_id, request.content)
+    # Add user message with files
+    files_list = [file.model_dump() for file in request.files] if request.files else None
+    storage.add_user_message(conversation_id, request.content, files_list)
 
     # If this is the first message, generate a title
     if is_first_message:
@@ -122,7 +138,7 @@ async def send_message(conversation_id: str, request: SendMessageRequest):
 
     # Run the 3-stage council process
     stage1_results, stage2_results, stage3_result, metadata = await run_full_council(
-        request.content
+        request.content, files_list
     )
 
     # Add assistant message with all stages
@@ -159,7 +175,7 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
     async def event_generator():
         try:
             # Add user message with files
-            files_list = [file.dict() for file in request.files] if request.files else None
+            files_list = [file.model_dump() for file in request.files] if request.files else None
             storage.add_user_message(conversation_id, request.content, files_list)
 
             # Start title generation in parallel (don't await yet)

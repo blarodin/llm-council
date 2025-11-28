@@ -54,7 +54,7 @@ export default function FileUpload({ attachedFiles, onFilesChange, disabled }) {
         onChange={handleFileSelect}
         style={{ display: 'none' }}
         multiple
-        accept="image/*,.pdf,.txt,.doc,.docx,.json,.csv"
+        accept="image/*,.pdf,.txt,.doc,.docx,.json,.csv,.md"
         disabled={disabled}
       />
       
@@ -100,7 +100,8 @@ export default function FileUpload({ attachedFiles, onFilesChange, disabled }) {
                   <img src={file.data} alt={file.name} className="file-thumbnail" />
                 ) : (
                   <div className="file-thumbnail non-image">
-                    {file.type.includes('pdf') ? '📄' : '📎'}
+                    {file.type.includes('pdf') ? '📄' : 
+                     file.name.endsWith('.md') ? '📝' : '📎'}
                   </div>
                 )}
                 <div className="file-info">

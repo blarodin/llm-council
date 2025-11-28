@@ -7,11 +7,16 @@ export default function Sidebar({
   onSelectConversation,
   onNewConversation,
   onDeleteConversation,
+  onRenameConversation,
   width,
   onWidthChange,
 }) {
   const [isResizing, setIsResizing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState('');
   const sidebarRef = useRef(null);
+  const inputRef = useRef(null);
+  const isSavingRef = useRef(false);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -42,6 +47,51 @@ export default function Sidebar({
     setIsResizing(true);
   };
 
+  const handleStartRename = (conv, e) => {
+    e.stopPropagation();
+    setEditingId(conv.id);
+    setEditingTitle(conv.title || 'New Conversation');
+  };
+
+  const handleCancelRename = () => {
+    isSavingRef.current = false;
+    setEditingId(null);
+    setEditingTitle('');
+  };
+
+  const handleSaveRename = (id) => {
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
+    
+    if (editingTitle.trim()) {
+      onRenameConversation(id, editingTitle.trim());
+    }
+    setEditingId(null);
+    setEditingTitle('');
+    
+    // Reset flag after a small delay
+    setTimeout(() => {
+      isSavingRef.current = false;
+    }, 100);
+  };
+
+  const handleRenameKeyDown = (e, id) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveRename(id);
+    } else if (e.key === 'Escape') {
+      handleCancelRename();
+    }
+  };
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (editingId && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editingId]);
+
   return (
     <div className="sidebar" ref={sidebarRef} style={{ width: `${width}px` }}>
       <div className="sidebar-header">
@@ -64,25 +114,51 @@ export default function Sidebar({
               onClick={() => onSelectConversation(conv.id)}
             >
               <div className="conversation-content">
-                <div className="conversation-title">
-                  {conv.title || 'New Conversation'}
-                </div>
-                <div className="conversation-meta">
-                  {conv.message_count} messages
-                </div>
+                {editingId === conv.id ? (
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    className="conversation-title-input"
+                    value={editingTitle}
+                    onChange={(e) => setEditingTitle(e.target.value)}
+                    onKeyDown={(e) => handleRenameKeyDown(e, conv.id)}
+                    onBlur={() => handleSaveRename(conv.id)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <>
+                    <div className="conversation-title">
+                      {conv.title || 'New Conversation'}
+                    </div>
+                    <div className="conversation-meta">
+                      {conv.message_count} messages
+                    </div>
+                  </>
+                )}
               </div>
-              <button
-                className="delete-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm('Delete this conversation?')) {
-                    onDeleteConversation(conv.id);
-                  }
-                }}
-                title="Delete conversation"
-              >
-                ×
-              </button>
+              <div className="conversation-actions">
+                {editingId !== conv.id && (
+                  <button
+                    className="rename-btn"
+                    onClick={(e) => handleStartRename(conv, e)}
+                    title="Rename conversation"
+                  >
+                    ✎
+                  </button>
+                )}
+                <button
+                  className="delete-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm('Delete this conversation?')) {
+                      onDeleteConversation(conv.id);
+                    }
+                  }}
+                  title="Delete conversation"
+                >
+                  ×
+                </button>
+              </div>
             </div>
           ))
         )}

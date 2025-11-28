@@ -6,6 +6,41 @@ import Stage3 from './Stage3';
 import FileUpload from './FileUpload';
 import './ChatInterface.css';
 
+// Helper component to display text file content
+function TextFilePreview({ file }) {
+  const [content, setContent] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    // Extract text from base64 data URL
+    try {
+      const base64Data = file.data.split('base64,')[1];
+      const decoded = atob(base64Data);
+      setContent(decoded);
+    } catch (e) {
+      setContent('(Unable to display file content)');
+    }
+  }, [file.data]);
+
+  const displayContent = content.length > 300 && !isExpanded 
+    ? content.substring(0, 300) + '...' 
+    : content;
+
+  return (
+    <div className="text-file-preview">
+      <pre className="text-file-content">{displayContent}</pre>
+      {content.length > 300 && (
+        <button 
+          className="expand-button" 
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function ChatInterface({
   conversation,
   onSendMessage,
@@ -67,15 +102,15 @@ export default function ChatInterface({
                   <div className="message-label">You</div>
                   <div className="message-content">
                     {msg.files && msg.files.length > 0 && (
-                      <div className="attached-files">
-                        {msg.files.map((file, idx) => (
-                          <div key={idx} className="attached-file-display">
-                            {file.type.startsWith('image/') && (
-                              <img src={file.data} alt={file.name} className="attached-image" />
-                            )}
-                            <span className="file-name">{file.name}</span>
-                          </div>
-                        ))}
+                      <div className="attached-files-list">
+                        <div className="files-list-header">📎 Attached files:</div>
+                        <ul className="files-list">
+                          {msg.files.map((file, idx) => (
+                            <li key={idx} className="file-list-item">
+                              {file.name}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     )}
                     <div className="markdown-content">
@@ -135,33 +170,31 @@ export default function ChatInterface({
         <div ref={messagesEndRef} />
       </div>
 
-      {conversation.messages.length === 0 && (
-        <form className="input-form" onSubmit={handleSubmit}>
-          <FileUpload
-            attachedFiles={attachedFiles}
-            onFilesChange={setAttachedFiles}
+      <form className="input-form" onSubmit={handleSubmit}>
+        <FileUpload
+          attachedFiles={attachedFiles}
+          onFilesChange={setAttachedFiles}
+          disabled={isLoading}
+        />
+        <div className="input-controls">
+          <textarea
+            className="message-input"
+            placeholder="Ask your question... (Shift+Enter for new line, Enter to send)"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
             disabled={isLoading}
+            rows={3}
           />
-          <div className="input-controls">
-            <textarea
-              className="message-input"
-              placeholder="Ask your question... (Shift+Enter for new line, Enter to send)"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isLoading}
-              rows={3}
-            />
-            <button
-              type="submit"
-              className="send-button"
-              disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
-            >
-              Send
-            </button>
-          </div>
-        </form>
-      )}
+          <button
+            type="submit"
+            className="send-button"
+            disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
+          >
+            Send
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
