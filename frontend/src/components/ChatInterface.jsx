@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import Stage1 from './Stage1';
 import Stage2 from './Stage2';
 import Stage3 from './Stage3';
+import FileUpload from './FileUpload';
 import './ChatInterface.css';
 
 export default function ChatInterface({
@@ -11,6 +12,7 @@ export default function ChatInterface({
   isLoading,
 }) {
   const [input, setInput] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState([]);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -23,9 +25,10 @@ export default function ChatInterface({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (input.trim() && !isLoading) {
-      onSendMessage(input);
+    if ((input.trim() || attachedFiles.length > 0) && !isLoading) {
+      onSendMessage(input, attachedFiles);
       setInput('');
+      setAttachedFiles([]);
     }
   };
 
@@ -63,6 +66,18 @@ export default function ChatInterface({
                 <div className="user-message">
                   <div className="message-label">You</div>
                   <div className="message-content">
+                    {msg.files && msg.files.length > 0 && (
+                      <div className="attached-files">
+                        {msg.files.map((file, idx) => (
+                          <div key={idx} className="attached-file-display">
+                            {file.type.startsWith('image/') && (
+                              <img src={file.data} alt={file.name} className="attached-image" />
+                            )}
+                            <span className="file-name">{file.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div className="markdown-content">
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
@@ -122,22 +137,29 @@ export default function ChatInterface({
 
       {conversation.messages.length === 0 && (
         <form className="input-form" onSubmit={handleSubmit}>
-          <textarea
-            className="message-input"
-            placeholder="Ask your question... (Shift+Enter for new line, Enter to send)"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
+          <FileUpload
+            attachedFiles={attachedFiles}
+            onFilesChange={setAttachedFiles}
             disabled={isLoading}
-            rows={3}
           />
-          <button
-            type="submit"
-            className="send-button"
-            disabled={!input.trim() || isLoading}
-          >
-            Send
-          </button>
+          <div className="input-controls">
+            <textarea
+              className="message-input"
+              placeholder="Ask your question... (Shift+Enter for new line, Enter to send)"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isLoading}
+              rows={3}
+            />
+            <button
+              type="submit"
+              className="send-button"
+              disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
+            >
+              Send
+            </button>
+          </div>
         </form>
       )}
     </div>
