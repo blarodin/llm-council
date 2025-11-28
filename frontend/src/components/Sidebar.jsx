@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './Sidebar.css';
 
 export default function Sidebar({
@@ -7,9 +7,43 @@ export default function Sidebar({
   onSelectConversation,
   onNewConversation,
   onDeleteConversation,
+  width,
+  onWidthChange,
 }) {
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef(null);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e) => {
+      const newWidth = e.clientX;
+      // Constrain width between 200px and 600px
+      if (newWidth >= 200 && newWidth <= 600) {
+        onWidthChange(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, onWidthChange]);
+
+  const handleResizeStart = (e) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
   return (
-    <div className="sidebar">
+    <div className="sidebar" ref={sidebarRef} style={{ width: `${width}px` }}>
       <div className="sidebar-header">
         <h1>LLM Council</h1>
         <button className="new-conversation-btn" onClick={onNewConversation}>
@@ -53,6 +87,11 @@ export default function Sidebar({
           ))
         )}
       </div>
+      <div
+        className="sidebar-resize-handle"
+        onMouseDown={handleResizeStart}
+        style={{ cursor: isResizing ? 'col-resize' : 'ew-resize' }}
+      />
     </div>
   );
 }

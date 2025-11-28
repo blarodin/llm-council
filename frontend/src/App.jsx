@@ -9,6 +9,7 @@ function App() {
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(260);
 
   // Load conversations on mount
   useEffect(() => {
@@ -204,6 +205,8 @@ function App() {
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
         onDeleteConversation={handleDeleteConversation}
+        width={sidebarWidth}
+        onWidthChange={setSidebarWidth}
       />
       <ChatInterface
         conversation={currentConversation}
