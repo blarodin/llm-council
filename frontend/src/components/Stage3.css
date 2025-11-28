@@ -3,6 +3,36 @@
   border-color: #c8e6c8;
 }
 
+.stage3 .stage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.stage3 .stage-header .stage-title {
+  margin: 0;
+}
+
+.stage3 .copy-button {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.stage3 .copy-button:hover {
+  background: #357abd;
+}
+
+.stage3 .copy-button:active {
+  transform: scale(0.98);
+}
+
 .final-response {
   background: #ffffff;
   padding: 20px;

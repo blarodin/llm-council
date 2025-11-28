@@ -170,3 +170,17 @@ def update_conversation_title(conversation_id: str, title: str):
 
     conversation["title"] = title
     save_conversation(conversation)
+
+
+def delete_conversation(conversation_id: str):
+    """
+    Delete a conversation.
+
+    Args:
+        conversation_id: Conversation identifier
+    """
+    path = get_conversation_path(conversation_id)
+    if not os.path.exists(path):
+        raise ValueError(f"Conversation {conversation_id} not found")
+
+    os.remove(path)
