@@ -1,8 +1,9 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import './FileUpload.css';
 
 export default function FileUpload({ attachedFiles, onFilesChange, disabled }) {
   const fileInputRef = useRef(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleFileSelect = async (e) => {
     const files = Array.from(e.target.files);
@@ -68,16 +69,23 @@ export default function FileUpload({ attachedFiles, onFilesChange, disabled }) {
       </button>
 
       {attachedFiles.length > 0 && (
-        <div className="attached-files-list">
+        <div className="attached-files-section">
+          <div className="attached-files-header" onClick={() => setIsExpanded(!isExpanded)}>
+            <span className="file-count">
+              {attachedFiles.length} {attachedFiles.length === 1 ? 'file' : 'files'} attached
+            </span>
+            <button
+              type="button"
+              className="toggle-button"
+              aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            >
+              {isExpanded ? '▼' : '▶'}
+            </button>
+          </div>
+          {isExpanded && (
+            <div className="attached-files-list">
           {attachedFiles.map((file, index) => (
             <div key={index} className="attached-file">
-              {file.type.startsWith('image/') && (
-                <img src={file.data} alt={file.name} className="file-thumbnail" />
-              )}
-              <div className="file-info">
-                <span className="file-name">{file.name}</span>
-                <span className="file-size">{formatFileSize(file.size)}</span>
-              </div>
               <button
                 type="button"
                 className="remove-file-button"
@@ -87,8 +95,23 @@ export default function FileUpload({ attachedFiles, onFilesChange, disabled }) {
               >
                 ×
               </button>
+              <div className="attached-file-preview">
+                {file.type.startsWith('image/') ? (
+                  <img src={file.data} alt={file.name} className="file-thumbnail" />
+                ) : (
+                  <div className="file-thumbnail non-image">
+                    {file.type.includes('pdf') ? '📄' : '📎'}
+                  </div>
+                )}
+                <div className="file-info">
+                  <span className="file-name" title={file.name}>{file.name}</span>
+                  <span className="file-size">{formatFileSize(file.size)}</span>
+                </div>
+              </div>
             </div>
           ))}
+            </div>
+          )}
         </div>
       )}
     </div>
