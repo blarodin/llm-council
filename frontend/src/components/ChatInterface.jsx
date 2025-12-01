@@ -4,6 +4,7 @@ import Stage1 from './Stage1';
 import Stage2 from './Stage2';
 import Stage3 from './Stage3';
 import FileUpload from './FileUpload';
+import { TokenSummary } from './TokenUsage';
 import './ChatInterface.css';
 
 // Helper component to display text file content
@@ -154,6 +155,11 @@ export default function ChatInterface({
                     </div>
                   )}
                   {msg.stage3 && <Stage3 finalResponse={msg.stage3} />}
+
+                  {/* Token Usage Summary */}
+                  {msg.metadata?.usage_summary && (
+                    <TokenSummary usageSummary={msg.metadata.usage_summary} />
+                  )}
                 </div>
               )}
             </div>

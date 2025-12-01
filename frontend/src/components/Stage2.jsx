@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { TokenBadge, TokenDetails } from './TokenUsage';
 import './Stage2.css';
 
 function deAnonymizeText(text, labelToModel) {
@@ -46,7 +47,9 @@ export default function Stage2({ rankings, labelToModel, aggregateRankings }) {
       <div className="tab-content">
         <div className="ranking-model">
           {rankings[activeTab].model}
+          <TokenBadge usage={rankings[activeTab].usage} />
         </div>
+        <TokenDetails usage={rankings[activeTab].usage} />
         <div className="ranking-content markdown-content">
           <ReactMarkdown>
             {deAnonymizeText(rankings[activeTab].ranking, labelToModel)}

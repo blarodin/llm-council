@@ -1,0 +1,111 @@
+.token-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: #e8f4f8;
+  color: #4a90e2;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.token-details {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.token-item {
+  display: flex;
+  gap: 4px;
+}
+
+.token-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.token-total {
+  font-weight: 600;
+  color: #333;
+}
+
+.token-summary {
+  margin-top: 20px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.token-summary h4 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-size: 1rem;
+}
+
+.summary-section {
+  margin-bottom: 16px;
+}
+
+.summary-section:last-child {
+  margin-bottom: 0;
+}
+
+.summary-section h5 {
+  margin: 0 0 8px 0;
+  color: #555;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.summary-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background-color: white;
+  border-radius: 4px;
+}
+
+.summary-label {
+  color: #666;
+  font-size: 0.85rem;
+  min-width: 160px;
+}
+
+.summary-value {
+  font-weight: 600;
+  color: #4a90e2;
+  font-size: 0.9rem;
+  min-width: 60px;
+}
+
+.summary-breakdown {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.summary-total {
+  border: 2px solid #4a90e2;
+  font-weight: 600;
+}
+
+.summary-total .summary-label {
+  color: #333;
+  font-weight: 600;
+}
+
+.summary-total .summary-value {
+  font-size: 1rem;
+}

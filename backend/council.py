@@ -93,7 +93,8 @@ async def stage1_collect_responses(user_query: str, files: List[Dict[str, Any]] 
         if response is not None:  # Only include successful responses
             stage1_results.append({
                 "model": model,
-                "response": response.get('content', '')
+                "response": response.get('content', ''),
+                "usage": response.get('usage')
             })
 
     return stage1_results
@@ -182,7 +183,8 @@ Now provide your evaluation and ranking:"""
             stage2_results.append({
                 "model": model,
                 "ranking": full_text,
-                "parsed_ranking": parsed
+                "parsed_ranking": parsed,
+                "usage": response.get('usage')
             })
 
     return stage2_results, label_to_model
@@ -250,12 +252,14 @@ Provide a clear, well-reasoned final answer that represents the council's collec
         # Fallback if chairman fails
         return {
             "model": CHAIRMAN_MODEL,
-            "response": "Error: Unable to generate final synthesis."
+            "response": "Error: Unable to generate final synthesis.",
+            "usage": None
         }
 
     return {
         "model": CHAIRMAN_MODEL,
-        "response": response.get('content', '')
+        "response": response.get('content', ''),
+        "usage": response.get('usage')
     }
 
 
@@ -291,6 +295,84 @@ def parse_ranking_from_text(ranking_text: str) -> List[str]:
     # Fallback: try to find any "Response X" patterns in order
     matches = re.findall(r'Response [A-Z]', ranking_text)
     return matches
+
+
+def calculate_usage_summary(
+    stage1_results: List[Dict[str, Any]],
+    stage2_results: List[Dict[str, Any]],
+    stage3_result: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    Calculate aggregate usage statistics across all stages.
+
+    Args:
+        stage1_results: Results from Stage 1
+        stage2_results: Results from Stage 2
+        stage3_result: Result from Stage 3
+
+    Returns:
+        Dict with usage summary by stage and by model
+    """
+    from collections import defaultdict
+
+    def sum_usage(usage_list):
+        """Sum up usage dicts."""
+        total = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        for usage in usage_list:
+            if usage:
+                total["prompt_tokens"] += usage.get("prompt_tokens", 0)
+                total["completion_tokens"] += usage.get("completion_tokens", 0)
+                total["total_tokens"] += usage.get("total_tokens", 0)
+        return total
+
+    # Calculate stage totals
+    stage1_usages = [r.get('usage') for r in stage1_results]
+    stage2_usages = [r.get('usage') for r in stage2_results]
+    stage3_usage = stage3_result.get('usage')
+
+    stage1_total = sum_usage(stage1_usages)
+    stage2_total = sum_usage(stage2_usages)
+    stage3_total = sum_usage([stage3_usage] if stage3_usage else [])
+
+    # Calculate grand total
+    grand_total = {
+        "prompt_tokens": stage1_total["prompt_tokens"] + stage2_total["prompt_tokens"] + stage3_total["prompt_tokens"],
+        "completion_tokens": stage1_total["completion_tokens"] + stage2_total["completion_tokens"] + stage3_total["completion_tokens"],
+        "total_tokens": stage1_total["total_tokens"] + stage2_total["total_tokens"] + stage3_total["total_tokens"]
+    }
+
+    # Calculate by model
+    by_model = defaultdict(lambda: {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
+
+    for result in stage1_results:
+        model = result['model']
+        usage = result.get('usage')
+        if usage:
+            by_model[model]["prompt_tokens"] += usage.get("prompt_tokens", 0)
+            by_model[model]["completion_tokens"] += usage.get("completion_tokens", 0)
+            by_model[model]["total_tokens"] += usage.get("total_tokens", 0)
+
+    for result in stage2_results:
+        model = result['model']
+        usage = result.get('usage')
+        if usage:
+            by_model[model]["prompt_tokens"] += usage.get("prompt_tokens", 0)
+            by_model[model]["completion_tokens"] += usage.get("completion_tokens", 0)
+            by_model[model]["total_tokens"] += usage.get("total_tokens", 0)
+
+    if stage3_usage:
+        model = stage3_result['model']
+        by_model[model]["prompt_tokens"] += stage3_usage.get("prompt_tokens", 0)
+        by_model[model]["completion_tokens"] += stage3_usage.get("completion_tokens", 0)
+        by_model[model]["total_tokens"] += stage3_usage.get("total_tokens", 0)
+
+    return {
+        "stage1_total": stage1_total,
+        "stage2_total": stage2_total,
+        "stage3_total": stage3_total,
+        "grand_total": grand_total,
+        "by_model": dict(by_model)
+    }
 
 
 def calculate_aggregate_rankings(
@@ -413,10 +495,14 @@ async def run_full_council(user_query: str, files: List[Dict[str, Any]] = None) 
         files
     )
 
+    # Calculate usage summary
+    usage_summary = calculate_usage_summary(stage1_results, stage2_results, stage3_result)
+
     # Prepare metadata
     metadata = {
         "label_to_model": label_to_model,
-        "aggregate_rankings": aggregate_rankings
+        "aggregate_rankings": aggregate_rankings,
+        "usage_summary": usage_summary
     }
 
     return stage1_results, stage2_results, stage3_result, metadata

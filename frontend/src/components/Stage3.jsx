@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { TokenBadge, TokenDetails } from './TokenUsage';
 import './Stage3.css';
 
 export default function Stage3({ finalResponse }) {
@@ -44,7 +45,9 @@ export default function Stage3({ finalResponse }) {
       <div className="final-response">
         <div className="chairman-label">
           Chairman: {finalResponse.model.split('/')[1] || finalResponse.model}
+          <TokenBadge usage={finalResponse.usage} />
         </div>
+        <TokenDetails usage={finalResponse.usage} />
         <div className="final-text markdown-content">
           <ReactMarkdown>{finalResponse.response}</ReactMarkdown>
         </div>

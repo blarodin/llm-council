@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { TokenBadge, TokenDetails } from './TokenUsage';
 import './Stage1.css';
 
 export default function Stage1({ responses }) {
@@ -26,7 +27,11 @@ export default function Stage1({ responses }) {
       </div>
 
       <div className="tab-content">
-        <div className="model-name">{responses[activeTab].model}</div>
+        <div className="model-name">
+          {responses[activeTab].model}
+          <TokenBadge usage={responses[activeTab].usage} />
+        </div>
+        <TokenDetails usage={responses[activeTab].usage} />
         <div className="response-text markdown-content">
           <ReactMarkdown>{responses[activeTab].response}</ReactMarkdown>
         </div>

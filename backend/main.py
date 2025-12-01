@@ -10,7 +10,7 @@ import json
 import asyncio
 
 from . import storage
-from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
+from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings, calculate_usage_summary
 
 app = FastAPI(title="LLM Council API")
 
@@ -197,7 +197,11 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
             # Stage 3: Synthesize final answer
             yield f"data: {json.dumps({'type': 'stage3_start'})}\n\n"
             stage3_result = await stage3_synthesize_final(request.content, stage1_results, stage2_results, files_list)
-            yield f"data: {json.dumps({'type': 'stage3_complete', 'data': stage3_result})}\n\n"
+            
+            # Calculate usage summary
+            usage_summary = calculate_usage_summary(stage1_results, stage2_results, stage3_result)
+            
+            yield f"data: {json.dumps({'type': 'stage3_complete', 'data': stage3_result, 'metadata': {'usage_summary': usage_summary}})}\n\n"
 
             # Wait for title generation if it was started
             if title_task:

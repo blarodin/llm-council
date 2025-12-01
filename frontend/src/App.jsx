@@ -178,6 +178,13 @@ function App() {
               const lastMsg = messages[messages.length - 1];
               lastMsg.stage3 = event.data;
               lastMsg.loading.stage3 = false;
+              // Merge usage_summary into metadata if provided
+              if (event.metadata?.usage_summary) {
+                lastMsg.metadata = {
+                  ...lastMsg.metadata,
+                  ...event.metadata
+                };
+              }
               return { ...prev, messages };
             });
             break;
