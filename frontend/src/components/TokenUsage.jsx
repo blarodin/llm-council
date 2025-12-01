@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import './TokenUsage.css';
 
 function formatNumber(num) {
@@ -40,6 +41,8 @@ export function TokenDetails({ usage }) {
 }
 
 export function TokenSummary({ usageSummary }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   if (!usageSummary) {
     return null;
   }
@@ -48,8 +51,13 @@ export function TokenSummary({ usageSummary }) {
 
   return (
     <div className="token-summary">
-      <h4>Token Usage Summary</h4>
+      <div className="token-summary-header" onClick={() => setIsExpanded(!isExpanded)}>
+        <h4>Token Usage Summary</h4>
+        <span className="token-summary-toggle">{isExpanded ? '▼' : '▶'}</span>
+      </div>
       
+      {isExpanded && (
+        <>
       <div className="summary-section">
         <h5>By Stage</h5>
         <div className="summary-grid">
@@ -89,6 +97,8 @@ export function TokenSummary({ usageSummary }) {
               ))}
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

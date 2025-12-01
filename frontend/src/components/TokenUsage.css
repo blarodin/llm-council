@@ -42,14 +42,36 @@
   border: 1px solid #e0e0e0;
 }
 
+.token-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.token-summary-header:hover {
+  opacity: 0.8;
+}
+
 .token-summary h4 {
-  margin: 0 0 16px 0;
+  margin: 0;
   color: #333;
   font-size: 1rem;
 }
 
+.token-summary-toggle {
+  color: #4a90e2;
+  font-size: 0.9rem;
+  transition: transform 0.2s ease;
+}
+
 .summary-section {
   margin-bottom: 16px;
+}
+
+.summary-section:first-child {
+  margin-top: 16px;
 }
 
 .summary-section:last-child {
