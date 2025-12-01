@@ -150,7 +150,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 3px;
-  transition: all 0.2s;
+  transition: background 0.2s, color 0.2s;
   flex-shrink: 0;
   font-weight: 300;
   font-family: Arial, sans-serif;
