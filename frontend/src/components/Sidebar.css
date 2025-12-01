@@ -6,6 +6,42 @@
   flex-direction: column;
   height: 100vh;
   flex-shrink: 0;
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+  overflow: hidden;
+}
+
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 20px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #666;
+  z-index: 20;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-toggle-btn:hover {
+  background: #4a90e2;
+  color: #fff;
+  border-color: #4a90e2;
+}
+
+.sidebar.collapsed .sidebar-toggle-btn {
+  right: 10px;
+  left: auto;
 }
 
 .sidebar-header {

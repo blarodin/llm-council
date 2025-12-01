@@ -10,6 +10,7 @@ function App() {
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(260);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Load conversations on mount
   useEffect(() => {
@@ -231,6 +232,8 @@ function App() {
         onRenameConversation={handleRenameConversation}
         width={sidebarWidth}
         onWidthChange={setSidebarWidth}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
       <ChatInterface
         conversation={currentConversation}

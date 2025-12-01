@@ -10,6 +10,8 @@ export default function Sidebar({
   onRenameConversation,
   width,
   onWidthChange,
+  isCollapsed,
+  onToggleCollapse,
 }) {
   const [isResizing, setIsResizing] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -94,13 +96,23 @@ export default function Sidebar({
   }, [editingId]);
 
   return (
-    <div className="sidebar" ref={sidebarRef} style={{ width: `${width}px` }}>
-      <div className="sidebar-header">
-        <h1>LLM Council</h1>
-        <button className="new-conversation-btn" onClick={onNewConversation}>
-          + New Conversation
-        </button>
-      </div>
+    <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`} ref={sidebarRef} style={{ width: isCollapsed ? '50px' : `${width}px` }}>
+      <button 
+        className="sidebar-toggle-btn" 
+        onClick={onToggleCollapse}
+        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        {isCollapsed ? '›' : '‹'}
+      </button>
+      
+      {!isCollapsed && (
+        <>
+          <div className="sidebar-header">
+            <h1>LLM Council</h1>
+            <button className="new-conversation-btn" onClick={onNewConversation}>
+              + New Conversation
+            </button>
+          </div>
 
       <div className="conversation-list">
         {conversations.length === 0 ? (
@@ -174,12 +186,14 @@ export default function Sidebar({
             </div>
           ))
         )}
-      </div>
-      <div
-        className="sidebar-resize-handle"
-        onMouseDown={handleResizeStart}
-        style={{ cursor: isResizing ? 'col-resize' : 'ew-resize' }}
-      />
+          </div>
+          <div
+            className="sidebar-resize-handle"
+            onMouseDown={handleResizeStart}
+            style={{ cursor: isResizing ? 'col-resize' : 'ew-resize' }}
+          />
+        </>
+      )}
     </div>
   );
 }
