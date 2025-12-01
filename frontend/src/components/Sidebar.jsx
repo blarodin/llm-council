@@ -14,6 +14,7 @@ export default function Sidebar({
   const [isResizing, setIsResizing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editingTitle, setEditingTitle] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
   const sidebarRef = useRef(null);
   const inputRef = useRef(null);
   const isSavingRef = useRef(false);
@@ -110,7 +111,7 @@ export default function Sidebar({
               key={conv.id}
               className={`conversation-item ${
                 conv.id === currentConversationId ? 'active' : ''
-              }`}
+              } ${deletingId === conv.id ? 'deleting' : ''}`}
               onClick={() => onSelectConversation(conv.id)}
             >
               <div className="conversation-content">
@@ -147,16 +148,27 @@ export default function Sidebar({
                   </button>
                 )}
                 <button
-                  className="delete-btn"
+                  className={`delete-btn ${deletingId === conv.id ? 'confirming' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (confirm('Delete this conversation?')) {
+                    if (deletingId === conv.id) {
+                      // Second click - perform deletion
                       onDeleteConversation(conv.id);
+                      setDeletingId(null);
+                    } else {
+                      // First click - enter confirmation state
+                      setDeletingId(conv.id);
                     }
                   }}
-                  title="Delete conversation"
+                  onMouseLeave={() => {
+                    // Reset confirmation state if mouse leaves the button
+                    if (deletingId === conv.id) {
+                      setDeletingId(null);
+                    }
+                  }}
+                  title={deletingId === conv.id ? 'Click again to confirm deletion' : 'Delete conversation'}
                 >
-                  ×
+                  {deletingId === conv.id ? 'Delete?' : '×'}
                 </button>
               </div>
             </div>

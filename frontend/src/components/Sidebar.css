@@ -85,6 +85,11 @@
   white-space: nowrap;
 }
 
+.conversation-item.deleting .conversation-title {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
 .conversation-meta {
   color: #999;
   font-size: 12px;
@@ -154,6 +159,15 @@
 .delete-btn:hover {
   background: #ff4444;
   color: #fff;
+}
+
+.delete-btn.confirming {
+  background: #ff4444;
+  color: #fff;
+  font-size: 11px;
+  width: auto;
+  padding: 0 6px;
+  font-weight: 500;
 }
 
 .sidebar-resize-handle {
