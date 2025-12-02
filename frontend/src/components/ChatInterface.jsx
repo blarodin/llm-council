@@ -3,8 +3,8 @@ import ReactMarkdown from 'react-markdown';
 import Stage1 from './Stage1';
 import Stage2 from './Stage2';
 import Stage3 from './Stage3';
-import FileUpload from './FileUpload';
 import { TokenSummary } from './TokenUsage';
+import FileUpload from './FileUpload';
 import './ChatInterface.css';
 
 // Helper component to display text file content
@@ -46,10 +46,14 @@ export default function ChatInterface({
   conversation,
   onSendMessage,
   isLoading,
+  isSidebarCollapsed,
+  onToggleSidebar,
 }) {
   const [input, setInput] = useState('');
   const [attachedFiles, setAttachedFiles] = useState([]);
+  const [welcomeInput, setWelcomeInput] = useState('');
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -59,12 +63,21 @@ export default function ChatInterface({
     scrollToBottom();
   }, [conversation]);
 
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if ((input.trim() || attachedFiles.length > 0) && !isLoading) {
       onSendMessage(input, attachedFiles);
       setInput('');
       setAttachedFiles([]);
+    }
+  };
+
+  const handleWelcomeSubmit = (e) => {
+    e.preventDefault();
+    if (welcomeInput.trim() && !isLoading) {
+      onSendMessage(welcomeInput, []);
+      setWelcomeInput('');
     }
   };
 
@@ -76,12 +89,33 @@ export default function ChatInterface({
     }
   };
 
+  const handleWelcomeKeyDown = (e) => {
+    // Submit on Enter
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleWelcomeSubmit(e);
+    }
+  };
+
+
+  const showEmptyState = !conversation || conversation.messages.length === 0;
+
   if (!conversation) {
     return (
       <div className="chat-interface">
-        <div className="empty-state">
-          <h2>Welcome to LLM Council</h2>
-          <p>Create a new conversation to get started</p>
+        <div className="chat-topbar">
+          <button
+            className="sidebar-toggle-btn"
+            onClick={onToggleSidebar}
+            title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            ☰
+          </button>
+          <div className="topbar-title">LLM Council</div>
+        </div>
+        <div className="welcome-screen">
+          <h1 className="welcome-title">Hi, how are you?</h1>
+          <p className="welcome-subtitle">How can I help you today?</p>
         </div>
       </div>
     );
@@ -89,11 +123,21 @@ export default function ChatInterface({
 
   return (
     <div className="chat-interface">
+      <div className="chat-topbar">
+        <button
+          className="sidebar-toggle-btn"
+          onClick={onToggleSidebar}
+          title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          ☰
+        </button>
+        <div className="topbar-title">LLM Council</div>
+      </div>
       <div className="messages-container">
         {conversation.messages.length === 0 ? (
-          <div className="empty-state">
-            <h2>Start a conversation</h2>
-            <p>Ask a question to consult the LLM Council</p>
+          <div className="welcome-screen-with-conversation">
+            <h1 className="welcome-title">Hi, how are you?</h1>
+            <p className="welcome-subtitle">How can I help you today?</p>
           </div>
         ) : (
           conversation.messages.map((msg, index) => (
@@ -183,22 +227,18 @@ export default function ChatInterface({
           disabled={isLoading}
         />
         <div className="input-controls">
-          <textarea
-            className="message-input"
-            placeholder="Ask your question... (Shift+Enter for new line, Enter to send)"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isLoading}
-            rows={3}
-          />
-          <button
-            type="submit"
-            className="send-button"
-            disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
-          >
-            Send
-          </button>
+          <div className="textarea-wrapper">
+            <textarea
+              ref={textareaRef}
+              className="message-input"
+              placeholder="Ask your question... (Shift+Enter for new line, Enter to send)"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isLoading}
+              rows={3}
+            />
+          </div>
         </div>
       </form>
     </div>
