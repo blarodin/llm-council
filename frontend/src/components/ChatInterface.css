@@ -84,7 +84,6 @@
 .input-wrapper {
   position: relative;
   width: 100%;
-  max-width: 600px;
 }
 
 .welcome-input {
@@ -176,22 +175,43 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px 24px 24px;
+  justify-content: center;
+  padding: 16px 40px 24px;
   border-top: 1px solid #e8e8e8;
   background: #ffffff;
   gap: 12px;
 }
 
-.input-controls {
+.input-area {
   width: 100%;
   max-width: 800px;
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
   gap: 8px;
 }
 
-.textarea-wrapper {
+.input-wrapper {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0;
   position: relative;
+  background: #ffffff;
+  border: 2px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 8px 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-wrapper:focus-within {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
 }
 
@@ -227,33 +247,26 @@
 }
 
 .message-input {
-  width: 100%;
-  padding: 16px 18px;
-  background: #ffffff;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
+  flex: 1;
+  padding: 8px 4px;
+  background: transparent;
+  border: none;
   color: #333;
   font-size: 15px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   line-height: 1.6;
   outline: none;
   resize: none;
-  min-height: 60px;
+  overflow-y: hidden;
+  min-height: 24px;
   max-height: 200px;
-  transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
-}
-
-
-.message-input:focus {
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.08);
+  transition: height 0.1s ease;
 }
 
 .message-input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: #f5f5f5;
 }
 
 .attached-files-preview {

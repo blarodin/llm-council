@@ -70,6 +70,10 @@ export default function ChatInterface({
       onSendMessage(input, attachedFiles);
       setInput('');
       setAttachedFiles([]);
+      // Reset textarea height
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
     }
   };
 
@@ -86,6 +90,16 @@ export default function ChatInterface({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    // Auto-resize textarea
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
     }
   };
 
@@ -221,22 +235,32 @@ export default function ChatInterface({
       </div>
 
       <form className="input-form" onSubmit={handleSubmit}>
-        <FileUpload
-          attachedFiles={attachedFiles}
-          onFilesChange={setAttachedFiles}
-          disabled={isLoading}
-        />
-        <div className="input-controls">
-          <div className="textarea-wrapper">
+        {attachedFiles.length > 0 && (
+          <FileUpload
+            attachedFiles={attachedFiles}
+            onFilesChange={setAttachedFiles}
+            disabled={isLoading}
+            showOnlyChips={true}
+          />
+        )}
+        <div className="input-area">
+          <div className="input-wrapper">
             <textarea
               ref={textareaRef}
               className="message-input"
-              placeholder="Ask your question... (Shift+Enter for new line, Enter to send)"
+              placeholder="Type your message here..."
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               disabled={isLoading}
-              rows={3}
+              rows={1}
+            />
+          </div>
+          <div className="input-actions">
+            <FileUpload
+              attachedFiles={attachedFiles}
+              onFilesChange={setAttachedFiles}
+              disabled={isLoading}
             />
           </div>
         </div>
