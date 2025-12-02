@@ -1,4 +1,4 @@
-use crate::config::{CHAIRMAN_MODEL, COUNCIL_MODELS};
+use crate::config::{get_chairman_model, get_council_models};
 use crate::models::*;
 use crate::openrouter::{query_model, query_models_parallel};
 use anyhow::Result;
@@ -88,7 +88,9 @@ pub async fn stage1_collect_responses(
     };
 
     // Query all models in parallel
-    let responses = query_models_parallel(COUNCIL_MODELS, messages).await;
+    let council_models = get_council_models();
+    let model_refs: Vec<&str> = council_models.iter().map(|s| s.as_str()).collect();
+    let responses = query_models_parallel(&model_refs, messages).await;
 
     // Format results
     let mut stage1_results = Vec::new();
@@ -175,7 +177,9 @@ Now provide your evaluation and ranking:"#,
     let messages = vec![json!({"role": "user", "content": ranking_prompt})];
 
     // Get rankings from all council models in parallel
-    let responses = query_models_parallel(COUNCIL_MODELS, messages).await;
+    let council_models = get_council_models();
+    let model_refs: Vec<&str> = council_models.iter().map(|s| s.as_str()).collect();
+    let responses = query_models_parallel(&model_refs, messages).await;
 
     // Format results
     let mut stage2_results = Vec::new();
@@ -246,16 +250,17 @@ Provide a clear, well-reasoned final answer that represents the council's collec
     let messages = vec![json!({"role": "user", "content": chairman_prompt})];
 
     // Query the chairman model
-    let response = query_model(CHAIRMAN_MODEL, messages, 120).await?;
+    let chairman_model = get_chairman_model();
+    let response = query_model(&chairman_model, messages, 120).await?;
 
     match response {
         Some(resp) => Ok(Stage3Result {
-            model: CHAIRMAN_MODEL.to_string(),
+            model: chairman_model.clone(),
             response: resp.content,
             usage: resp.usage,
         }),
         None => Ok(Stage3Result {
-            model: CHAIRMAN_MODEL.to_string(),
+            model: chairman_model.clone(),
             response: "Error: Unable to generate final synthesis.".to_string(),
             usage: None,
         }),

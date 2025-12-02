@@ -52,21 +52,11 @@ export default function FileUpload({ attachedFiles, onFilesChange, disabled }) {
         ref={fileInputRef}
         type="file"
         onChange={handleFileSelect}
-        style={{ display: 'none' }}
+        className="file-input-field"
         multiple
         accept="image/*,.pdf,.txt,.doc,.docx,.json,.csv,.md"
         disabled={disabled}
       />
-      
-      <button
-        type="button"
-        className="attach-file-button"
-        onClick={() => fileInputRef.current?.click()}
-        disabled={disabled}
-        title="Attach files"
-      >
-        📎
-      </button>
 
       {attachedFiles.length > 0 && (
         <div className="attached-files-section">

@@ -3,6 +3,7 @@ mod config;
 mod council;
 mod models;
 mod openrouter;
+mod settings;
 mod storage;
 
 use std::net::SocketAddr;

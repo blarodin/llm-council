@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Drag and Drop Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 50px;
+        }
+        #dropzone {
+            width: 500px;
+            height: 300px;
+            border: 3px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #666;
+            margin: 20px 0;
+        }
+        #dropzone.dragging {
+            border-color: #4a90e2;
+            background: rgba(74, 144, 226, 0.1);
+        }
+        #log {
+            background: #f5f5f5;
+            padding: 20px;
+            border: 1px solid #ddd;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Drag and Drop Test</h1>
+    <p>Drag a file onto the box below:</p>
+    
+    <div id="dropzone">Drop files here</div>
+    
+    <h2>Event Log:</h2>
+    <div id="log"></div>
+
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const log = document.getElementById('log');
+
+        function addLog(message) {
+            const time = new Date().toLocaleTimeString();
+            log.innerHTML = `[${time}] ${message}<br>` + log.innerHTML;
+            console.log(message);
+        }
+
+        dropzone.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            addLog('DRAG ENTER');
+            dropzone.classList.add('dragging');
+        });
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            addLog('DRAG OVER');
+        });
+
+        dropzone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            addLog('DRAG LEAVE');
+            dropzone.classList.remove('dragging');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragging');
+            const files = Array.from(e.dataTransfer.files);
+            addLog(`DROP: ${files.length} file(s) - ${files.map(f => f.name).join(', ')}`);
+        });
+
+        // Also add to document body to catch all drag events
+        document.body.addEventListener('dragenter', (e) => {
+            addLog('BODY: drag enter');
+        });
+
+        document.body.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Required to allow drop
+        });
+
+        addLog('Test page loaded - try dragging a file!');
+    </script>
+</body>
+</html>

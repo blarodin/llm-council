@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
+import Settings from './components/Settings';
 import { api } from './api';
 import './App.css';
 
@@ -9,8 +10,9 @@ function App() {
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(260);
+  const [sidebarWidth, setSidebarWidth] = useState(300);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Load conversations on mount
   useEffect(() => {
@@ -50,6 +52,8 @@ function App() {
         ...conversations,
       ]);
       setCurrentConversationId(newConv.id);
+      // Initialize the conversation immediately with empty messages
+      setCurrentConversation({ id: newConv.id, messages: [] });
     } catch (error) {
       console.error('Failed to create conversation:', error);
     }
@@ -91,7 +95,23 @@ function App() {
   };
 
   const handleSendMessage = async (content, files = []) => {
-    if (!currentConversationId) return;
+    // Auto-create conversation if none exists
+    let conversationId = currentConversationId;
+    if (!conversationId) {
+      try {
+        const newConv = await api.createConversation();
+        conversationId = newConv.id;
+        setConversations([
+          { id: newConv.id, created_at: newConv.created_at, message_count: 0 },
+          ...conversations,
+        ]);
+        setCurrentConversationId(newConv.id);
+        setCurrentConversation({ id: newConv.id, messages: [] });
+      } catch (error) {
+        console.error('Failed to create conversation:', error);
+        return;
+      }
+    }
 
     setIsLoading(true);
     try {
@@ -123,7 +143,7 @@ function App() {
       }));
 
       // Send message with streaming
-      await api.sendMessageStream(currentConversationId, content, files, (eventType, event) => {
+      await api.sendMessageStream(conversationId, content, files, (eventType, event) => {
         switch (eventType) {
           case 'stage1_start':
             setCurrentConversation((prev) => {
@@ -230,16 +250,20 @@ function App() {
         onNewConversation={handleNewConversation}
         onDeleteConversation={handleDeleteConversation}
         onRenameConversation={handleRenameConversation}
-        width={sidebarWidth}
-        onWidthChange={setSidebarWidth}
+        onOpenSettings={() => setShowSettings(true)}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        width={sidebarWidth}
+        onResize={setSidebarWidth}
       />
       <ChatInterface
         conversation={currentConversation}
         onSendMessage={handleSendMessage}
         isLoading={isLoading}
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
+      {showSettings && <Settings onClose={() => setShowSettings(false)} />}
     </div>
   );
 }

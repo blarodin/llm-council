@@ -3,6 +3,7 @@ use crate::council::{
     run_full_council, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final,
 };
 use crate::models::*;
+use crate::settings;
 use crate::storage;
 use axum::{
     extract::Path,
@@ -14,18 +15,26 @@ use axum::{
     routing::{delete, get, patch, post},
     Json, Router,
 };
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use tokio_stream::wrappers::ReceiverStream;
 use futures::stream::Stream;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use tower_http::cors::{CorsLayer, Any};
 
 #[derive(Clone)]
 pub struct AppState {}
 
 pub fn create_router() -> Router {
     let state = AppState {};
+
+    // Configure CORS to allow frontend access
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
 
     Router::new()
         .route("/", get(health_check))
@@ -39,6 +48,12 @@ pub fn create_router() -> Router {
             "/api/conversations/:id/message/stream",
             post(send_message_stream),
         )
+        .route("/api/settings/openrouter-key", get(get_api_key))
+        .route("/api/settings/openrouter-key", post(set_api_key))
+        .route("/api/settings/openrouter-key", delete(clear_api_key))
+        .route("/api/settings/models", get(get_models))
+        .route("/api/settings/models", post(set_models))
+        .layer(cors)
         .with_state(Arc::new(state))
 }
 
@@ -393,4 +408,115 @@ async fn send_message_stream(
     let stream = ReceiverStream::new(rx);
     let error_stream = ErrorStream { inner: stream };
     Ok(Sse::new(error_stream).keep_alive(KeepAlive::default()))
+}
+
+// Settings API endpoints
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ApiKeyResponse {
+    api_key: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SetApiKeyRequest {
+    api_key: String,
+}
+
+async fn get_api_key() -> Result<Json<ApiKeyResponse>, (StatusCode, String)> {
+    match settings::get_settings() {
+        Ok(settings) => Ok(Json(ApiKeyResponse {
+            api_key: settings.openrouter_api_key.unwrap_or_default(),
+        })),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to get settings: {}", e),
+        )),
+    }
+}
+
+async fn set_api_key(
+    Json(payload): Json<SetApiKeyRequest>,
+) -> Result<Json<DeleteResponse>, (StatusCode, String)> {
+    match settings::set_openrouter_api_key(payload.api_key) {
+        Ok(_) => Ok(Json(DeleteResponse {
+            status: "ok".to_string(),
+            message: "API key saved".to_string(),
+        })),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to save API key: {}", e),
+        )),
+    }
+}
+
+async fn clear_api_key() -> Result<Json<DeleteResponse>, (StatusCode, String)> {
+    match settings::clear_openrouter_api_key() {
+        Ok(_) => Ok(Json(DeleteResponse {
+            status: "ok".to_string(),
+            message: "API key cleared".to_string(),
+        })),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to clear API key: {}", e),
+        )),
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ModelsResponse {
+    council_models: Vec<String>,
+    chairman_model: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SetModelsRequest {
+    council_models: Vec<String>,
+    chairman_model: String,
+}
+
+async fn get_models() -> Result<Json<ModelsResponse>, (StatusCode, String)> {
+    Ok(Json(ModelsResponse {
+        council_models: settings::get_council_models(),
+        chairman_model: settings::get_chairman_model(),
+    }))
+}
+
+async fn set_models(
+    Json(payload): Json<SetModelsRequest>,
+) -> Result<Json<DeleteResponse>, (StatusCode, String)> {
+    // Validate that we have at least one council model
+    if payload.council_models.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "At least one council model is required".to_string(),
+        ));
+    }
+
+    if payload.chairman_model.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Chairman model is required".to_string(),
+        ));
+    }
+
+    // Save council models
+    if let Err(e) = settings::set_council_models(payload.council_models) {
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to save council models: {}", e),
+        ));
+    }
+
+    // Save chairman model
+    if let Err(e) = settings::set_chairman_model(payload.chairman_model) {
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to save chairman model: {}", e),
+        ));
+    }
+
+    Ok(Json(DeleteResponse {
+        status: "ok".to_string(),
+        message: "Models configuration saved".to_string(),
+    }))
 }

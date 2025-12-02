@@ -8,47 +8,20 @@ export default function Sidebar({
   onNewConversation,
   onDeleteConversation,
   onRenameConversation,
-  width,
-  onWidthChange,
+  onOpenSettings,
   isCollapsed,
   onToggleCollapse,
+  width,
+  onResize,
 }) {
-  const [isResizing, setIsResizing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [deletingId, setDeletingId] = useState(null);
-  const sidebarRef = useRef(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isResizing, setIsResizing] = useState(false);
   const inputRef = useRef(null);
   const isSavingRef = useRef(false);
-
-  useEffect(() => {
-    if (!isResizing) return;
-
-    const handleMouseMove = (e) => {
-      const newWidth = e.clientX;
-      // Constrain width between 200px and 600px
-      if (newWidth >= 200 && newWidth <= 600) {
-        onWidthChange(newWidth);
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isResizing, onWidthChange]);
-
-  const handleResizeStart = (e) => {
-    e.preventDefault();
-    setIsResizing(true);
-  };
+  const sidebarRef = useRef(null);
 
   const handleStartRename = (conv, e) => {
     e.stopPropagation();
@@ -95,105 +68,158 @@ export default function Sidebar({
     }
   }, [editingId]);
 
+  // Handle resize
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing) return;
+      e.preventDefault();
+      const newWidth = e.clientX;
+      if (newWidth >= 200 && newWidth <= 600) {
+        onResize(newWidth);
+      }
+    };
+
+    const handleMouseUp = (e) => {
+      if (isResizing) {
+        e.preventDefault();
+      }
+      setIsResizing(false);
+    };
+
+    const handleSelectStart = (e) => {
+      if (isResizing) {
+        e.preventDefault();
+      }
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('selectstart', handleSelectStart);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('selectstart', handleSelectStart);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, onResize]);
+
+  const filteredConversations = conversations.filter(conv => 
+    conv.title?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`} ref={sidebarRef} style={{ width: isCollapsed ? '50px' : `${width}px` }}>
-      <button 
-        className="sidebar-toggle-btn" 
-        onClick={onToggleCollapse}
-        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        {isCollapsed ? '›' : '‹'}
-      </button>
-      
+    <div 
+      ref={sidebarRef}
+      className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isResizing ? 'resizing' : ''}`}
+      style={{ width: isCollapsed ? '50px' : `${width}px` }}
+    >
       {!isCollapsed && (
-        <>
+        <div
+          className="resize-handle"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsResizing(true);
+          }}
+        />
+      )}
+      <>
           <div className="sidebar-header">
-            <h1>LLM Council</h1>
-            <button className="new-conversation-btn" onClick={onNewConversation}>
-              + New Conversation
+            <div className="search-container">
+              <span className="search-icon">🔍</span>
+              <input 
+                type="text" 
+                className="search-input" 
+                placeholder="Search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <button className="new-chat-btn" onClick={onNewConversation}>
+              <span className="btn-icon">➕</span>
+              <span>New Chat</span>
             </button>
           </div>
 
-      <div className="conversation-list">
-        {conversations.length === 0 ? (
-          <div className="no-conversations">No conversations yet</div>
-        ) : (
-          conversations.map((conv) => (
-            <div
-              key={conv.id}
-              className={`conversation-item ${
-                conv.id === currentConversationId ? 'active' : ''
-              } ${deletingId === conv.id ? 'deleting' : ''}`}
-              onClick={() => onSelectConversation(conv.id)}
-            >
-              <div className="conversation-content">
-                {editingId === conv.id ? (
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    className="conversation-title-input"
-                    value={editingTitle}
-                    onChange={(e) => setEditingTitle(e.target.value)}
-                    onKeyDown={(e) => handleRenameKeyDown(e, conv.id)}
-                    onBlur={() => handleSaveRename(conv.id)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                ) : (
-                  <>
-                    <div className="conversation-title">
-                      {conv.title || 'New Conversation'}
-                    </div>
-                    <div className="conversation-meta">
-                      {conv.message_count} messages
-                    </div>
-                  </>
-                )}
-              </div>
-              <div className="conversation-actions">
-                {editingId !== conv.id && (
-                  <button
-                    className="rename-btn"
-                    onClick={(e) => handleStartRename(conv, e)}
-                    title="Rename conversation"
+          <div className="conversation-list">
+            {filteredConversations.length > 0 && (
+              <div className="threads-container">
+                {filteredConversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className={`conversation-item ${
+                      conv.id === currentConversationId ? 'active' : ''
+                    } ${deletingId === conv.id ? 'deleting' : ''}`}
+                    onClick={() => onSelectConversation(conv.id)}
                   >
-                    ✎
-                  </button>
-                )}
-                <button
-                  className={`delete-btn ${deletingId === conv.id ? 'confirming' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (deletingId === conv.id) {
-                      // Second click - perform deletion
-                      onDeleteConversation(conv.id);
-                      setDeletingId(null);
-                    } else {
-                      // First click - enter confirmation state
-                      setDeletingId(conv.id);
-                    }
-                  }}
-                  onMouseLeave={() => {
-                    // Reset confirmation state if mouse leaves the button
-                    if (deletingId === conv.id) {
-                      setDeletingId(null);
-                    }
-                  }}
-                  title={deletingId === conv.id ? 'Click again to confirm deletion' : 'Delete conversation'}
-                >
-                  {deletingId === conv.id ? 'Delete?' : '×'}
-                </button>
+                    <div className="conversation-content">
+                      {editingId === conv.id ? (
+                        <input
+                          ref={inputRef}
+                          type="text"
+                          className="conversation-title-input"
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onKeyDown={(e) => handleRenameKeyDown(e, conv.id)}
+                          onBlur={() => handleSaveRename(conv.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      ) : (
+                        <div className="conversation-title">
+                          {conv.title || 'New Conversation'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="conversation-actions">
+                      {editingId !== conv.id && (
+                        <button
+                          className="rename-btn"
+                          onClick={(e) => handleStartRename(conv, e)}
+                          title="Rename conversation"
+                        >
+                          ✎
+                        </button>
+                      )}
+                      <button
+                        className={`delete-btn ${deletingId === conv.id ? 'confirming' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (deletingId === conv.id) {
+                            onDeleteConversation(conv.id);
+                            setDeletingId(null);
+                          } else {
+                            setDeletingId(conv.id);
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          if (deletingId === conv.id) {
+                            setDeletingId(null);
+                          }
+                        }}
+                        title={deletingId === conv.id ? 'Click again to confirm deletion' : 'Delete conversation'}
+                      >
+                        {deletingId === conv.id ? 'Delete?' : '×'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))
-        )}
+            )}
           </div>
-          <div
-            className="sidebar-resize-handle"
-            onMouseDown={handleResizeStart}
-            style={{ cursor: isResizing ? 'col-resize' : 'ew-resize' }}
-          />
-        </>
-      )}
+          
+          <div className="sidebar-footer">
+            <button className="settings-btn" onClick={onOpenSettings}>
+              <span className="btn-icon">⚙️</span>
+              <span>Settings</span>
+            </button>
+          </div>
+      </>
     </div>
   );
 }
