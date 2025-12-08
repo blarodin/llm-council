@@ -109,9 +109,10 @@ export default function Sidebar({
     };
   }, [isResizing, onResize]);
 
-  const filteredConversations = conversations.filter(conv => 
-    conv.title?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredConversations = conversations.filter(conv => {
+    const title = conv.title || 'New Conversation';
+    return title.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   return (
     <div 
